@@ -16,6 +16,8 @@
 	<!-- Main Stylesheets -->
 	<link rel="stylesheet" href="css/style.css"/>
 
+	<style></style>
+
 </head>
 <body>
 	<!-- Page Preloder -->
@@ -93,103 +95,183 @@
 	
 
 	<script>
-		document.getElementById("upload-btn-div").innerHTML = `
-			<div class="container">
-				<div class="row">
-				<div class="col-lg-12 text-center mt-5 mb-3">
-					<h2 class="section-title">Add New Photo</h2>
-				</div>
-				</div>
-				<div class="row justify-content-center">
-				<div class="col-md-8">
-					<div class="upload-area">
-					<div class="file-upload-wrapper text-center">
-						<label for="file-upload" class="custom-file-upload">
-						<i class="fa fa-cloud-upload"></i> Select Image
-						</label>
-						<input id="file-upload" type="file" accept="image/*" />
-					</div>
-					<div id="image-preview-container" class="mt-4 text-center">
-						<!-- Preview will appear here -->
-					</div>
-					<div class="upload-actions mt-4 text-center">
-						<button id="upload-button" class="site-btn" disabled>Upload Photo</button>
-						<div id="upload-status" style="display: none;">
-						<p>Uploading... Please wait.</p>
-						</div>
-					</div>
-					</div>
-				</div>
-				</div>
-			</div>
-			`;
 
-			$(document).ready(function() {
-			const fileUpload = document.getElementById('file-upload');
-			const previewContainer = document.getElementById('image-preview-container');
-			const uploadButton = document.getElementById('upload-button');
-			const uploadStatus = document.getElementById('upload-status');
+		// Define fetchImages globally
+		async function fetchImages() {
+		try {
+			const response = await fetch('http://localhost:3000/api/images/');
+			const data = await response.json();
 
-			if(fileUpload) {
-				fileUpload.addEventListener('change', function() {
-				const file = this.files[0];
+			if (data.images && Array.isArray(data.images)) {
+			// Inject images into the slider
+			const heroSlider = document.querySelector('.hero-slider');
+			const heroTextSlider = document.querySelector('.hero-text-slider');
+			
+			// Clear existing images
+			heroSlider.innerHTML = '';
+			heroTextSlider.innerHTML = '';
+			
+			data.images.forEach(image => {
+				// Create the slide item with image
+				const slideItem = document.createElement('div');
+				slideItem.classList.add('slide-item');
+				slideItem.innerHTML = `
+				<a class="fresco" href="${image.url}" data-fresco-group="projects">
+					<img src="${image.url}" alt="Image" />
+				</a>
+				`;
+				heroSlider.appendChild(slideItem);
 
-				if (file) {
-					const reader = new FileReader();
-
-					reader.addEventListener('load', function() {
-					previewContainer.innerHTML = `<img src="${this.result}" alt="Image Preview" />`;
-					uploadButton.disabled = false;
-					});
-
-					reader.readAsDataURL(file);
-				} else {
-					previewContainer.innerHTML = '';
-					uploadButton.disabled = true;
-				}
-				});
-			}
-
-			if(uploadButton) {
-				uploadButton.addEventListener('click', async function() {
-				const file = fileUpload.files[0];
-				if (!file) {
-					alert('Please select an image first');
-					return;
-				}
-
-				const formData = new FormData();
-				formData.append('image', file);
-
-				try {
-					uploadButton.disabled = true;
-					uploadStatus.style.display = 'block';
-					
-					const response = await fetch('http://localhost:3000/api/images', {
-					method: 'POST',
-					body: formData
-					});
-
-					const result = await response.json();
-
-					if (response.ok) {
-					alert(`Image uploaded successfully!`);
-					location.reload();
-					} else {
-					alert(`Error: ${result.error || 'Unknown error'}`);
-					}
-				} catch (error) {
-					alert(`Error: ${error.message}`);
-				} finally {
-					uploadButton.disabled = false;
-					uploadStatus.style.display = 'none';
-				}
-				});
-			}
+				// Create the text item with delete button
+				const textItem = document.createElement('div');
+				textItem.classList.add('text-item');
+				textItem.innerHTML = `
+				<p class="btn-danger p-2" style="width: fit-content; margin: auto; border-radius: 50%;" data-key="${image.key}" onclick="deleteImage(event)">Delete</p>
+				`;
+				heroTextSlider.appendChild(textItem);
 			});
 
+			// Reinitialize the sliders after adding new images
+			if (typeof $(heroSlider).slick === 'function') {
+				$(heroSlider).slick('unslick');
+				$(heroSlider).slick({
+				dots: false,
+				infinite: true,
+				speed: 300,
+				slidesToShow: 1,
+				centerMode: true,
+				variableWidth: true,
+				arrows: false,
+				asNavFor: '.hero-text-slider',
+				autoplay: true,
+				pauseOnHover: false,
+				autoplaySpeed: 3000,
+				responsive: [
+					{
+					breakpoint: 480,
+					settings: {
+						slidesToShow: 1,
+						slidesToScroll: 1
+					}
+					}
+				]
+				});
+			}
+			
+			// Initialize the text slider to sync with the hero slider
+			if (typeof $(heroTextSlider).slick === 'function') {
+				$(heroTextSlider).slick('unslick');
+				$(heroTextSlider).slick({
+				slidesToShow: 1,
+				slidesToScroll: 1,
+				asNavFor: '.hero-slider',
+				dots: false,
+				centerMode: true,
+				focusOnSelect: true,
+				arrows: false
+				});
+			}
+			}
+		} catch (error) {
+			console.error('Error fetching images:', error);
+		}
+		}
+
+		// Delete image function
+		async function deleteImage(event) {
+		const imageKey = event.target.getAttribute('data-key');
 		
-		</script>
+		if (imageKey) {
+			if (confirm('Are you sure you want to delete this image?')) {
+			try {
+				const response = await fetch(`http://localhost:3000/api/images/${imageKey}`, {
+				method: 'DELETE'
+				});
+
+				const result = await response.json();
+
+				if (response.ok) {
+				alert('Image deleted successfully!');
+				fetchImages();  // Now fetchImages is accessible
+				} else {
+				alert(`Error: ${result.error || 'Unknown error'}`);
+				}
+			} catch (error) {
+				alert(`Error: ${error.message}`);
+			}
+			}
+		}
+		}
+
+		$(document).ready(function() {
+		const fileUpload = document.getElementById('file-upload');
+		const previewContainer = document.getElementById('image-preview-container');
+		const uploadButton = document.getElementById('upload-button');
+		const uploadStatus = document.getElementById('upload-status');
+
+		// Call fetchImages on page load
+		fetchImages();
+
+		// Handle file upload
+		if (fileUpload) {
+			fileUpload.addEventListener('change', function() {
+			const file = this.files[0];
+
+			if (file) {
+				const reader = new FileReader();
+
+				reader.addEventListener('load', function() {
+				previewContainer.innerHTML = `<img src="${this.result}" alt="Image Preview" />`;
+				uploadButton.disabled = false;
+				});
+
+				reader.readAsDataURL(file);
+			} else {
+				previewContainer.innerHTML = '';
+				uploadButton.disabled = true;
+			}
+			});
+		}
+
+		if (uploadButton) {
+			uploadButton.addEventListener('click', async function() {
+			const file = fileUpload.files[0];
+			if (!file) {
+				alert('Please select an image first');
+				return;
+			}
+
+			const formData = new FormData();
+			formData.append('image', file);
+
+			try {
+				uploadButton.disabled = true;
+				uploadStatus.style.display = 'block';
+
+				const response = await fetch('http://localhost:3000/api/images', {
+				method: 'POST',
+				body: formData
+				});
+
+				const result = await response.json();
+
+				if (response.ok) {
+				alert(`Image uploaded successfully!`);
+				fetchImages();  // Refresh images after upload
+				} else {
+				alert(`Error: ${result.error || 'Unknown error'}`);
+				}
+			} catch (error) {
+				alert(`Error: ${error.message}`);
+			} finally {
+				uploadButton.disabled = false;
+				uploadStatus.style.display = 'none';
+			}
+			});
+		}
+	});
+
+	</script>
 
 	</body>
 </html>
