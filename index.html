@@ -130,7 +130,9 @@
 		// Define fetchImages globally
 		async function fetchImages() {
 		try {
-			const response = await fetch('http://localhost:3000/api/images/');
+			//const response = await fetch('http://localhost:3000/api/images/'); //local
+			const response = await fetch('http://internal-jdkframes-api-alb-332275632.eu-west-1.elb.amazonaws.com:3000/api/images/'); //aws
+
 			const data = await response.json();
 
 			if (data.images && Array.isArray(data.images)) {
@@ -215,7 +217,8 @@
 		if (imageKey) {
 			if (confirm('Are you sure you want to delete this image?')) {
 			try {
-				const response = await fetch(`http://localhost:3000/api/images/${imageKey}`, {
+				//const response = await fetch(`http://localhost:3000/api/images/${imageKey}`, { //local
+				const response = await fetch(`http://internal-jdkframes-api-alb-332275632.eu-west-1.elb.amazonaws.com:3000/api/images/${imageKey}`, { //aws
 				method: 'DELETE'
 				});
 
@@ -280,7 +283,8 @@
 				uploadButton.disabled = true;
 				uploadStatus.style.display = 'block';
 
-				const response = await fetch('http://localhost:3000/api/images', {
+				//const response = await fetch('http://localhost:3000/api/images', { //local
+				const response = await fetch('http://internal-jdkframes-api-alb-332275632.eu-west-1.elb.amazonaws.com:3000/api/images', { //aws
 				method: 'POST',
 				body: formData
 				});
