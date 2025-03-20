@@ -1,13 +1,16 @@
-FROM nginx:alpine
+FROM node:18-alpine
 
-# Copy the static website files to the Nginx server
-COPY . /usr/share/nginx/html/
+WORKDIR /app
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy package.json and install dependencies
+COPY package.json ./
+RUN npm install
+
+# Copy all your static files
+COPY . .
 
 # Expose port 80
 EXPOSE 80
 
-# Start Nginx server
-CMD ["nginx", "-g", "daemon off;"]
+# Start the server
+CMD ["node", "server.js"]
