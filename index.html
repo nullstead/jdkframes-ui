@@ -233,6 +233,7 @@
 				}
 			} catch (error) {
 				alert(`Error: ${error.message}`);
+				location.reload();
 			}
 			}
 		}
@@ -293,7 +294,8 @@
 
 				if (response.ok) {
 				alert(`Image uploaded successfully!`);
-				fetchImages();  // Refresh images after upload
+				//fetchImages();  // Refresh images after upload
+				location.reload();
 				} else {
 				alert(`Error: ${result.error || 'Unknown error'}`);
 				}
